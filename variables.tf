@@ -14,7 +14,7 @@ variable "cluster_name" {
 
 variable "ms_namespace" {
   type    = string
-  default = "rndxClientService"
+  default = "rndxClientNewService"
 }
 
 variable "vpc_id" {
