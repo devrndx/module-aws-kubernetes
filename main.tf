@@ -12,7 +12,7 @@ locals {
 #  * EKS Cluster
 #
 
-resource "aws_iam_role" "rndx-cluster-new" {
+resource "aws_iam_role" "rndx-cluster" {
   name = local.cluster_name
 
   assume_role_policy = <<POLICY
@@ -31,12 +31,12 @@ resource "aws_iam_role" "rndx-cluster-new" {
 POLICY
 }
 
-resource "aws_iam_role_policy_attachment" "rndx-cluster-new-AmazonEKSClusterPolicy" {
+resource "aws_iam_role_policy_attachment" "rndx-cluster-AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.rndx-cluster-new.name
+  role       = aws_iam_role.rndx-cluster.name
 }
 
-resource "aws_security_group" "rndx-cluster-new" {
+resource "aws_security_group" "rndx-cluster" {
   name        = local.cluster_name
   description = "Cluster communication with worker nodes"
   vpc_id      = var.vpc_id
@@ -59,25 +59,25 @@ resource "aws_security_group" "rndx-cluster-new" {
   }
 
   tags = {
-    Name = "rndx-client-managing-new"
+    Name = "rndx-client-managing"
   }
 }
 
-resource "aws_eks_cluster" "rndx-client-managing-new" {
+resource "aws_eks_cluster" "rndx-client-managing" {
   name     = local.cluster_name
-  role_arn = aws_iam_role.rndx-cluster-new.arn
+  role_arn = aws_iam_role.rndx-cluster.arn
 
   vpc_config {
-    security_group_ids = [aws_security_group.rndx-cluster-new.id]
+    security_group_ids = [aws_security_group.rndx-cluster.id]
     subnet_ids         = var.cluster_subnet_ids
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.rndx-cluster-new-AmazonEKSClusterPolicy
+    aws_iam_role_policy_attachment.rndx-cluster-AmazonEKSClusterPolicy
   ]
 }
 
-resource "aws_iam_role" "rndx-node-new" {
+resource "aws_iam_role" "rndx-node" {
   name = "${local.cluster_name}.node"
 
   assume_role_policy = <<POLICY
@@ -96,25 +96,25 @@ resource "aws_iam_role" "rndx-node-new" {
 POLICY
 }
 
-resource "aws_iam_role_policy_attachment" "rndx-node-new-AmazonEKSWorkerNodePolicy" {
+resource "aws_iam_role_policy_attachment" "rndx-node-AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.rndx-node-new.name
+  role       = aws_iam_role.rndx-node.name
 }
 
-resource "aws_iam_role_policy_attachment" "rndx-node-new-AmazonEKS_CNI_Policy" {
+resource "aws_iam_role_policy_attachment" "rndx-node-AmazonEKS_CNI_Policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.rndx-node-new.name
+  role       = aws_iam_role.rndx-node.name
 }
 
-resource "aws_iam_role_policy_attachment" "rndx-node-new-AmazonEC2ContainerRegistryReadOnly" {
+resource "aws_iam_role_policy_attachment" "rndx-node-AmazonEC2ContainerRegistryReadOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.rndx-node-new.name
+  role       = aws_iam_role.rndx-node.name
 }
 
-resource "aws_eks_node_group" "rndx-node-new-group" {
-  cluster_name    = aws_eks_cluster.rndx-client-managing-new.name
-  node_group_name = "rndxClientNewService"
-  node_role_arn   = aws_iam_role.rndx-node-new.arn
+resource "aws_eks_node_group" "rndx-node-group" {
+  cluster_name    = aws_eks_cluster.rndx-client-managing.name
+  node_group_name = "rndxClientService"
+  node_role_arn   = aws_iam_role.rndx-node.arn
   subnet_ids      = var.nodegroup_subnet_ids
 
   scaling_config {
@@ -127,9 +127,9 @@ resource "aws_eks_node_group" "rndx-node-new-group" {
   instance_types = var.nodegroup_instance_types
 
   depends_on = [
-    aws_iam_role_policy_attachment.rndx-node-new-AmazonEKSWorkerNodePolicy,
-    aws_iam_role_policy_attachment.rndx-node-new-AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.rndx-node-new-AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.rndx-node-AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.rndx-node-AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.rndx-node-AmazonEC2ContainerRegistryReadOnly,
   ]
 }
 
@@ -139,19 +139,19 @@ resource "local_file" "kubeconfig" {
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data: ${aws_eks_cluster.rndx-client-managing-new.certificate_authority.0.data}
-    server: ${aws_eks_cluster.rndx-client-managing-new.endpoint}
-  name: ${aws_eks_cluster.rndx-client-managing-new.arn}
+    certificate-authority-data: ${aws_eks_cluster.rndx-client-managing.certificate_authority.0.data}
+    server: ${aws_eks_cluster.rndx-client-managing.endpoint}
+  name: ${aws_eks_cluster.rndx-client-managing.arn}
 contexts:
 - context:
-    cluster: ${aws_eks_cluster.rndx-client-managing-new.arn}
-    user: ${aws_eks_cluster.rndx-client-managing-new.arn}
-  name: ${aws_eks_cluster.rndx-client-managing-new.arn}
-current-context: ${aws_eks_cluster.rndx-client-managing-new.arn}
+    cluster: ${aws_eks_cluster.rndx-client-managing.arn}
+    user: ${aws_eks_cluster.rndx-client-managing.arn}
+  name: ${aws_eks_cluster.rndx-client-managing.arn}
+current-context: ${aws_eks_cluster.rndx-client-managing.arn}
 kind: Config
 preferences: {}
 users:
-- name: ${aws_eks_cluster.rndx-client-managing-new.arn}
+- name: ${aws_eks_cluster.rndx-client-managing.arn}
   user:
     exec:
       apiVersion: client.authentication.k8s.io/v1alpha1
@@ -159,14 +159,14 @@ users:
       args:
         - "token"
         - "-i"
-        - "${aws_eks_cluster.rndx-client-managing-new.name}"
+        - "${aws_eks_cluster.rndx-client-managing.name}"
     KUBECONFIG
   filename = "kubeconfig"
 }
 /*
 #  Use data to ensure that the cluster is up before we start using it
 data "aws_eks_cluster" "msur" {
-  name = aws_eks_cluster.rndx-client-managing-new.id
+  name = aws_eks_cluster.rndx-client-managing.id
 }
 # Use kubernetes provider to work with the kubernetes cluster API
 provider "kubernetes" {
